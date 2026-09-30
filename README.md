@@ -1,133 +1,162 @@
 # ConfigLens
 
-## Configuration Explainability Tool for .NET
+> A .NET developer tool that makes configuration resolution transparent.
 
-ConfigLens is a developer-focused CLI tool that explains where an ASP.NET Core configuration value comes from and why it became the effective runtime value.
+## The Problem
 
-## Problem
-
-ASP.NET Core applications can load configuration from multiple sources, such as:
+In .NET applications, configuration values can come from multiple sources:
 
 * `appsettings.json`
 * `appsettings.{Environment}.json`
 * Environment Variables
 * User Secrets
-* Command Line Arguments
+* Command-line arguments
+* Other configuration providers
 
-When the final configuration value is different from what a developer expects, it can be difficult to determine which source provided the value and which source overrode another.
+When the same configuration key exists in multiple sources, it can be difficult for developers to understand:
 
-This can lead to time-consuming debugging, especially when the application works differently between development, testing, and production environments.
+* Where the final value came from
+* Which source overrode another source
+* Why a specific value was selected
+* Whether the same configuration exists in multiple places
 
-## Proposed Solution
+Developers can see the final configuration value, but they may not always know **why that value won**.
 
-ConfigLens provides an explanation for a configuration key instead of only displaying its final value.
+## The Idea
 
-For example:
+**ConfigLens** is a developer tool for .NET applications that analyzes configuration sources and explains how the final configuration value was resolved.
+
+Instead of showing only:
 
 ```text
-configlens explain "ConnectionStrings:DefaultConnection"
+ConnectionStrings:DefaultConnection
+= <final value>
 ```
 
-Possible output:
+ConfigLens aims to show:
 
 ```text
-Configuration Key:
 ConnectionStrings:DefaultConnection
 
-Effective Value:
-Server=ProductionServer
-
-Source:
-Environment Variables
-
-Other Values:
-
 appsettings.json
-    Server=LocalServer
+        ↓
+    Value A
 
-Environment Variables
-    Server=ProductionServer
+appsettings.Development.json
+        ↓
+    Value B
 
-Explanation:
-The Environment Variable overrides the value
-provided by appsettings.json.
+Environment Variable
+        ↓
+    Value C
+
+-------------------------
+Final Value: Value C
+Winner: Environment Variable
 ```
 
-## Main Goal
+This gives developers a clear **Configuration Resolution Trace**.
 
-The main goal of ConfigLens is to answer three questions:
+## Core Features
 
-1. What is the final configuration value?
-2. Where did this value come from?
-3. Why did this source become the effective source?
+### Configuration Resolution
 
-## MVP Features
+Show the final value of a configuration key and the source that provided it.
 
-* Explain a specific configuration key.
-* Detect available configuration sources.
-* Display the value provided by each source.
-* Identify the effective value.
-* Explain which source overrides another source.
-* Provide a simple CLI interface.
+### Override Chain
 
-## Example Commands
+Show how different configuration sources override each other.
 
-```bash
-configlens explain "ConnectionStrings:DefaultConnection"
+### Configuration Conflict Detection
+
+Detect keys that are defined in multiple configuration sources and highlight potential conflicts.
+
+### Configuration Source Explorer
+
+Allow developers to inspect configuration keys and their origins.
+
+## Example
+
+Given:
+
+```json
+// appsettings.json
+{
+  "Redis": {
+    "ConnectionString": "localhost:6379"
+  }
+}
 ```
 
-```bash
-configlens explain "Logging:LogLevel:Default"
+and:
+
+```json
+// appsettings.Development.json
+{
+  "Redis": {
+    "ConnectionString": "localhost:6380"
+  }
+}
 ```
 
-## Future Features
+ConfigLens could explain:
 
-* Watch configuration changes in real time.
-* Export results as JSON.
-* Generate HTML diagnostic reports.
-* Visualize configuration precedence.
-* Add CI/CD integration.
-* Add VS Code integration.
-* Support additional .NET configuration scenarios.
+```text
+Redis:ConnectionString
 
-## Target Users
+Defined in:
+✓ appsettings.json
+✓ appsettings.Development.json
 
-* .NET Developers
-* Backend Developers
-* Full Stack Developers
-* DevOps Engineers
-* Teams working with multiple environments
+Final Source:
+appsettings.Development.json
 
-## Expected Benefits
+Reason:
+Development configuration overrides the base configuration.
+```
 
-ConfigLens can reduce the time developers spend investigating unexpected configuration behavior.
+## Planned MVP
 
-Instead of manually checking multiple configuration sources, developers can use one command to understand the final value and its origin.
+The first version will focus on:
 
-This can be particularly useful when troubleshooting:
+1. Reading configuration sources
+2. Flattening configuration keys
+3. Resolving final values
+4. Identifying the source of each value
+5. Displaying the override chain
+6. Detecting duplicate/conflicting configuration keys
 
-* Different behavior between developers' machines.
-* Development vs production configuration.
-* Environment variables overriding configuration files.
-* Unexpected connection strings.
-* Logging configuration issues.
-* Missing or overridden application settings.
-
-## Technology
-
-The initial implementation is planned with:
+## Planned Technologies
 
 * C#
 * .NET
-* .NET CLI
-* ASP.NET Core Configuration APIs
+* ASP.NET Core
+* `IConfiguration`
+* Configuration Providers
+* JSON
+* CLI
+* Unit Testing
+
+## Future Ideas
+
+Possible future extensions include:
+
+* Docker environment analysis
+* Git integration
+* Azure configuration support
+* Configuration diff between environments
+* Secret detection
+* Configuration impact analysis
+* Web dashboard
 
 ## Project Status
 
-This project is currently at the idea and design stage.
+**Idea / Planning**
 
-The initial goal is to build a small Proof of Concept and validate the configuration tracing approach before expanding the tool.
+The project is currently in the planning stage. The repository will be used to define the problem, MVP, architecture, and implementation roadmap before development begins.
 
-## License
+## Goal
 
-To be decided during implementation.
+ConfigLens aims to make configuration behavior easier to understand and debug for .NET developers.
+
+> **Don't just show the configuration value. Explain why it is the value.**
